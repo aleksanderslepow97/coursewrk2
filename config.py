@@ -1,5 +1,5 @@
 import os
 
 
-data_json = "data/vacancies.json"
-path_operations = os.path.abspath(data_json)
+ROOT_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(ROOT_DIR, "data")

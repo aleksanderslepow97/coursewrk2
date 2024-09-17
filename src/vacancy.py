@@ -1,62 +1,56 @@
-from typing import List
-
-
 class Vacancy:
-    """ Класс для работы с вакансиями """
+    """Класс для представления вакансий"""
 
-    def __init__(self, name, salary_from, salary_to, currency, url, responsibility):
+    __slots__ = ("name", "url", "requirement", "responsibility", "salary")
+
+    def __init__(self, name: str, url: str, requirement: str, responsibility: str,
+                 salary: int | None = None) -> None:
+        """Инициализатор класса Vacancy"""
         self.name = name
-        self.salary_from = salary_from
-        self.salary_to = salary_to
-        self.currency = currency
         self.url = url
+        self.requirement = requirement
         self.responsibility = responsibility
+        self.salary = self.__salary_validation(salary)
 
-    def __lt__(self, other):
-        """Метод сравнения вакансий между собой по зарплате по зарплате"""
-
-        if self.salary_from != 0:
-            return self.salary_from <= other.salary_from
-        elif self.salary_from == 0:
-            return self.salary_to <= other.salary_from
-
-    def __str__(self):
-        """Метод для представляния вакансий при печати"""
-        a = (f'Название вакансии: {self.name}\n'
-             f'Ссылка на вакансию: {self.url}\n'
-             f'Описание вакансии: {self.responsibility}\n')
-        if self.salary_from == 0 and self.salary_to == 0:
-            return (f'{a}'
-                    f'ЗП не указана\n')
-        elif self.salary_from == 0:
-            return (f'{a}'
-                    f'ЗП до {self.salary_to} {self.currency}\n')
-        elif self.salary_to == 0:
-            return (f'{a}'
-                    f'ЗП от {self.salary_from} {self.currency}\n')
-        else:
-            return (f'{a}'
-                    f'ЗП от {self.salary_from} до {self.salary_to} {self.currency}\n')
+    @staticmethod
+    def __salary_validation(salary: int | float | None) -> int | float | None:
+        """Валидация зарплаты"""
+        if salary:
+            return salary
+        return 0
 
     @classmethod
-    def cast_to_object_list(cls, data: List[dict]) -> List['Vacancy']:
-        """Преобразует список словарей, содержащих данные о вакансиях, в список объектов класса Vacancy"""
+    def cast_to_object_list(cls, vacancies: list[dict]) -> list["Vacancy"]:
+        """Возвращает список экземпляров Vacancy из списка словарей"""
 
-        vacancies = []
-        for item in data:
-            name = item['name']
-            url = item['alternate_url']
-            salary_from = item['salary']['from']
-            salary_to = item['salary']['to']
-            currency = item['salary']['currency']
-            responsibility = item['snippet']['responsibility']
-            vacancy = cls(
-                name=name,
-                url=url,
-                salary_from=salary_from,
-                salary_to=salary_to,
-                currency=currency,
-                responsibility=responsibility
-            )
-            vacancies.append(vacancy)
-        return vacancies
+        return [cls(**vac) for vac in vacancies]
+
+    def __str__(self) -> str:
+        """Метод строкового предсиавления вакансий"""
+
+        return (
+            f"{self.name} (Зарплата: {self.salary if self.salary else 'не указана'}).\n"
+            f"Требования: {self.requirement}.\nОбязанности: {self.responsibility}.\nСсылка на вакансию: {self.url}"
+        )
+
+    def __eq__(self, other) -> bool:
+        """Метод сравнения вакансий (=)"""
+        return self.salary == other.salary
+
+    def __lt__(self, other) -> bool:
+        """Метод сравнения вакансий (<)"""
+        return self.salary < other.salary
+
+    def __le__(self, other) -> bool:
+        """Метод сравнения вакансий (<=)"""
+        return self.salary <= other.salary
+
+    def to_dict(self) -> dict:
+        """Возвращает словарь с данными о вакансии из экземпляра класса Vacancy"""
+        return {
+            "name": self.name,
+            "url": self.url,
+            "requirement": self.requirement,
+            "responsibility": self.responsibility,
+            "salary": self.salary,
+        }

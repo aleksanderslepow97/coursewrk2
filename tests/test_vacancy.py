@@ -1,40 +1,74 @@
-import pytest
-from src.API_HH import HeadHunterRuAPI
+from src.vacancy import Vacancy
 
 
-@pytest.fixture
-def mock_hh_api(monkeypatch):
-    class MockResponse:
-        def __init__(self, json_data, status_code):
-            self.json_data = json_data
-            self.status_code = status_code
-
-        def json(self):
-            return self.json_data
-
-    def mock_get(*args, **kwargs):
-        return MockResponse({
-            'items': [
-                {'name': 'Vacancy 1', 'salary': {'from': 1000, 'to': 2000}, 'area': {'name': 'Москва'}, 'alternate_url': 'http://example.com/1'},
-                {'name': 'Vacancy 2', 'salary': {'from': 2000, 'to': 3000}, 'area': {'name': 'Москва'}, 'alternate_url': 'http://example.com/2'}
-            ]
-        }, 200)
-
-    monkeypatch.setattr('requests.get', mock_get)
+def test_vacancy_init():
+    vac = Vacancy("Разработчик", "https://hh", "требования", "обязанности")
+    assert vac.name == "Разработчик"
+    assert vac.url == "https://hh"
+    assert vac.requirement == "требования"
+    assert vac.responsibility == "обязанности"
+    assert vac.salary == 0
 
 
-def test_get_vacancies_success(mock_hh_api):
-    api = HeadHunterRuAPI()
-    vacancies = api.getting_vacancies('python developer')
+def test_cast_to_object_list(vacancies_dict):
+    vacs = Vacancy.cast_to_object_list(vacancies_dict)
+    assert len(vacs) == 2
+    assert vacs[0].name == "Разработчик"
+    assert vacs[1].salary == 120000
 
-    assert len(vacancies) == 2
-    assert vacancies[0]['name'] == 'Vacancy 1'
-    assert vacancies[1]['name'] == 'Vacancy 2'
-    assert vacancies[0]['salary']['from'] == 1000
-    assert vacancies[0]['salary']['to'] == 2000
-    assert vacancies[1]['salary']['from'] == 2000
-    assert vacancies[1]['salary']['to'] == 3000
-    assert vacancies[0]['area']['name'] == 'Москва'
-    assert vacancies[1]['area']['name'] == 'Москва'
-    assert vacancies[0]['alternate_url'] == 'http://example.com/1'
-    assert vacancies[1]['alternate_url'] == 'http://example.com/2'
+
+def test_cast_to_object_list_empty_list():
+    vacs = Vacancy.cast_to_object_list([])
+    assert vacs == []
+
+
+def test_vacancy_str_salary_0():
+    vac = Vacancy("Разработчик", "https://hh", "требования", "обязанности")
+    assert str(vac) == (
+        "Разработчик (Зарплата: не указана).\nТребования: требования.\n"
+        "Обязанности: обязанности.\nСсылка на вакансию: https://hh"
+    )
+
+
+def test_vacancy_str():
+    vac = Vacancy("Разработчик", "https://hh", "требования", "обязанности", 10000)
+    assert str(vac) == (
+        "Разработчик (Зарплата: 10000).\nТребования: требования.\n"
+        "Обязанности: обязанности.\nСсылка на вакансию: https://hh"
+    )
+
+
+def test_vacancy_eq(vacancies_objects):
+    vac = Vacancy("Разработчик", "https://hh", "требования", "обязанности")
+    assert vacancies_objects[0] != vacancies_objects[1]
+    assert vacancies_objects[1] == vac
+
+
+def test_vacancy_lt(vacancies_objects):
+    assert vacancies_objects[0] > vacancies_objects[1]
+    assert vacancies_objects[2] < vacancies_objects[0]
+
+
+def test_vacancy_le(vacancies_objects):
+    assert vacancies_objects[0] >= vacancies_objects[1]
+    assert vacancies_objects[2] <= vacancies_objects[0]
+
+
+def test_vacancy_to_dict(vacancies_objects):
+    vac = vacancies_objects[0]
+    assert vac.to_dict() == {
+        "name": "Разработчик",
+        "url": "https://hh",
+        "requirement": "требования",
+        "responsibility": "обязанности",
+        "salary": 100000,
+    }
+
+    vac = Vacancy("Разработчик", "https://hh", "требования", "обязанности")
+    assert vac.to_dict() == {
+        "name": "Разработчик",
+        "url": "https://hh",
+        "requirement": "требования",
+        "responsibility": "обязанности",
+        "salary": 0,
+    }
